@@ -5,10 +5,10 @@ metadata:
   name: deployment-course-vafiya
 
 spec:
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: app-course-vafiya
-  replicas: 1
   template:
     metadata:
       labels:
@@ -19,7 +19,7 @@ spec:
           image: 991524241826.dkr.ecr.ap-south-2.amazonaws.com/cloudstudents/vafiya-course:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 3001
+            - containerPort: 3000   # ✅ FIXED
 
 ---
 apiVersion: v1
@@ -29,13 +29,13 @@ metadata:
   name: service-course-vafiya
 
 spec:
+  type: NodePort
   selector:
     app.kubernetes.io/name: app-course-vafiya
   ports:
-    - port: 3001
-      targetPort: 3001
-      protocol: TCP
-  type: NodePort
+    - name: http                 # ✅ REQUIRED (fixes pipeline error)
+      port: 80                  # ✅ FIXED
+      targetPort: 3000          # ✅ FIXED
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -46,6 +46,7 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /   # ✅ important
 
 spec:
   ingressClassName: alb
@@ -58,4 +59,4 @@ spec:
               service:
                 name: service-course-vafiya
                 port:
-                  number: 3001
+                  number: 80   # ✅ FIXED
