@@ -10,7 +10,7 @@ phases:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 991524241826.dkr.ecr.$AWS_REGION.amazonaws.com
-      - IMAGE_TAG=latest
+      - IMAGE_TAG = latest
 
   build:
     commands:
@@ -22,7 +22,6 @@ phases:
     commands:
       - echo Pushing Docker image...
       - docker push $ECR_REPO:$IMAGE_TAG
-      - docker push $ECR_REPO:latest
       - printf '[{"name":"app-course-vafiya","imageUri":"%s"}]' $ECR_REPO:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
