@@ -19,6 +19,15 @@ dynamodb = boto3.resource("dynamodb", region_name=REGION)
 courses_table = dynamodb.Table("vafiya-course")
 
 
+# ✅ Root route (IMPORTANT for ALB health check)
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({
+        "message": "Course Service Running"
+    }), 200
+
+
+# Health check
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
@@ -27,12 +36,11 @@ def health():
     }), 200
 
 
+# Get one course
 @app.route("/courses/<course_id>", methods=["GET"])
 def get_course(course_id):
     response = courses_table.get_item(
-        Key={
-            "id": course_id
-        }
+        Key={"id": course_id}
     )
 
     item = response.get("Item")
@@ -45,15 +53,14 @@ def get_course(course_id):
     return jsonify(item), 200
 
 
+# List all courses
 @app.route("/courses", methods=["GET"])
 def list_courses():
     response = courses_table.scan()
-
-    return jsonify(
-        response.get("Items", [])
-    ), 
+    return jsonify(response.get("Items", [])), 200   # ✅ FIXED
 
 
+# Add new course
 @app.route("/courses", methods=["POST"])
 def add_course():
     try:
