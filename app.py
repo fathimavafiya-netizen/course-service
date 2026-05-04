@@ -1,39 +1,25 @@
+from flask_cors import CORS
 import os
 import boto3
-from flask import Flask, jsonify
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+from flask import Flask, jsonify, request
+from botocore.exceptions import ClientError
 
 app = Flask(__name__)
+CORS(app, origins="*")
 
-# X-Ray config
-xray_recorder.configure(service="course-service")
-XRayMiddleware(app, xray_recorder)
 
-# AWS config
 REGION = os.environ.get("AWS_REGION", "ap-south-2")
+
 dynamodb = boto3.resource("dynamodb", region_name=REGION)
 courses_table = dynamodb.Table("Courses")
 
-# ✅ ROOT ROUTE (VERY IMPORTANT)
-@app.route("/")
-def home():
-    return jsonify({
-        "message": "Course Service Running",
-        "endpoints": [
-            "/health",
-            "/courses",
-            "/courses/<course_code>"
-        ]
-    }), 200
 
-# ✅ HEALTH CHECK (for ALB)
-@app.route("/health")
+@app.route("/vafiya-student/health")
 def health():
-    return jsonify({"status": "ok", "service": "course-service"}), 200
+    return jsonify({"status": "ok"}), 200
 
-# Get single course
-@app.route("/courses/<course_code>", methods=["GET"])
+
+@app.route("/vafiya-student/courses/<course_code>", methods=["GET"])
 def get_course(course_code):
     resp = courses_table.get_item(Key={"code": course_code})
     item = resp.get("Item")
@@ -41,12 +27,36 @@ def get_course(course_code):
         return jsonify({"error": "Course not found"}), 404
     return jsonify(item), 200
 
-# List courses
-@app.route("/courses", methods=["GET"])
+
+@app.route("/vafiya-student/courses", methods=["GET"])
 def list_courses():
     resp = courses_table.scan(Limit=50)
     return jsonify(resp.get("Items", [])), 200
 
-# Run app
+
+@app.route("/vafiya-student/courses", methods=["POST"])
+def add_course():
+    try:
+        data = request.get_json()
+
+        if not data or "code" not in data or "name" not in data:
+            return jsonify({"error": "Missing required fields: code, name"}), 400
+
+        courses_table.put_item(
+            Item=data,
+            ConditionExpression="attribute_not_exists(code)"
+        )
+
+        return jsonify({"message": "Course added successfully"}), 201
+
+    except ClientError as e:
+        if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
+            return jsonify({"error": "Course already exists"}), 409
+        return jsonify({"error": str(e)}), 500
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3001)
+    app.run(host="0.0.0.0", port=3001, debug=False)

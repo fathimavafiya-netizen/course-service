@@ -3,42 +3,36 @@ kind: Deployment
 metadata:
   namespace: cloudstudents
   name: deployment-course-vafiya
-
 spec:
-  replicas: 1
   selector:
     matchLabels:
-      app: course-vafiya
-
+      app.kubernetes.io/name: app-course-vafiya
+  replicas: 1
   template:
     metadata:
       labels:
-        app: course-vafiya
-
+        app.kubernetes.io/name: app-course-vafiya
     spec:
       containers:
-        - name: course-service
-          image: 991524241826.dkr.ecr.ap-south-2.amazonaws.com/vafiya-course-service:latest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 3001
-
+      - image: 991524241826.dkr.ecr.ap-south-2.amazonaws.com/cloudstudents/vafiya-course:latest
+        imagePullPolicy: Always
+        name: app-course-vafiya
+        ports:
+        - containerPort: 3001
 ---
 apiVersion: v1
 kind: Service
 metadata:
   namespace: cloudstudents
   name: service-course-vafiya
-
 spec:
-  selector:
-    app: course-vafiya
   ports:
     - port: 3001
       targetPort: 3001
       protocol: TCP
   type: NodePort
-
+  selector:
+    app.kubernetes.io/name: app-course-vafiya
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -48,18 +42,18 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    alb.ingress.kubernetes.io/group.name: student-app
-    alb.ingress.kubernetes.io/healthcheck-path: /health
 
+    alb.ingress.kubernetes.io/group.name: student-app
+    alb.ingress.kubernetes.io/healthcheck-path: /vafiya-student/health
 spec:
   ingressClassName: alb
   rules:
     - http:
         paths:
-          - path: /vafiya-student
-            pathType: Prefix
-            backend:
-              service:
-                name: service-course-vafiya
-                port:
-                  number: 3001
+        - path: /vafiya-student
+          pathType: Prefix
+          backend:
+            service:
+              name: service-course-vafiya
+              port:
+                number: 3001
