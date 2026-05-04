@@ -3,14 +3,21 @@ version: 0.2
 env:
   variables:
     AWS_REGION: "ap-south-2"
-    ECR_REPO: "991524241826.dkr.ecr.ap-south-2.amazonaws.com/cloudstudents/vafiya-course"
+    ECR_REPO: "991524241826.dkr.ecr.ap-south-2.amazonaws.com/vafiya-course-service"
 
 phases:
+  install:
+    commands:
+      - echo Installing dependencies...
+      - aws --version
+      - docker --version
+
   pre_build:
     commands:
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 991524241826.dkr.ecr.$AWS_REGION.amazonaws.com
-      - export IMAGE_TAG=latest
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+      - echo Image tag: $IMAGE_TAG
 
   build:
     commands:
@@ -22,6 +29,9 @@ phases:
     commands:
       - echo Pushing Docker image to ECR...
       - docker push $ECR_REPO:$IMAGE_TAG
+      - docker push $ECR_REPO:latest
+
+      - echo Creating imagedefinitions.json...
       - printf '[{"name":"app-course-vafiya","imageUri":"%s"}]' $ECR_REPO:$IMAGE_TAG > imagedefinitions.json
 
 artifacts:
