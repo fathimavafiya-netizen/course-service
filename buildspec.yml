@@ -27,6 +27,3 @@ phases:
       - echo Creating imagedefinitions.json...
       - "printf '[{\"name\":\"app-course-vafiya\",\"imageUri\":\"%s\"}]' $ECR_REPO:$IMAGE_TAG > imagedefinitions.json"
 
-artifacts:
-  files:
-    - imagedefinitions.json
