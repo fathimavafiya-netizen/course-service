@@ -5,18 +5,20 @@ metadata:
   name: deployment-course-vafiya
 
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app.kubernetes.io/name: app-course-vafiya
-  replicas: 1
+      app: course-vafiya
+
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: app-course-vafiya
+        app: course-vafiya
+
     spec:
       containers:
-        - name: app-course-vafiya
-          image: 991524241826.dkr.ecr.ap-south-2.amazonaws.com/cloudstudents/vafiya-course:latest
+        - name: course-service
+          image: 991524241826.dkr.ecr.ap-south-2.amazonaws.com/vafiya-course-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 3001
@@ -30,7 +32,7 @@ metadata:
 
 spec:
   selector:
-    app.kubernetes.io/name: app-course-vafiya
+    app: course-vafiya
   ports:
     - port: 3001
       targetPort: 3001
@@ -44,8 +46,10 @@ metadata:
   namespace: cloudstudents
   name: ingress-course-vafiya
   annotations:
+    kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /health
 
 spec:
   ingressClassName: alb

@@ -3,27 +3,41 @@ version: 0.2
 env:
   variables:
     AWS_REGION: "ap-south-2"
-    ECR_REPO: "991524241826.dkr.ecr.ap-south-2.amazonaws.com/cloudstudents/vafiya-course"
+    CLUSTER_NAME: "mca-students-eks-cluster"
+    ECR_REPO: "991524241826.dkr.ecr.ap-south-2.amazonaws.com/vafiya-course-service"
 
 phases:
+  install:
+    commands:
+      - echo Installing kubectl...
+      - curl -o kubectl https://amazon-eks.s3.ap-south-2.amazonaws.com/latest/2023-11-14/bin/linux/amd64/kubectl
+      - chmod +x kubectl
+      - mv kubectl /usr/local/bin/
+
   pre_build:
     commands:
-      - echo Logging in to Amazon ECR...
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 991524241826.dkr.ecr.$AWS_REGION.amazonaws.com
-      - IMAGE_TAG=latest
+      - echo Logging into ECR...
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO
+      - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
 
   build:
     commands:
-      - echo Build started...
+      - echo Building Docker image...
       - docker build -t $ECR_REPO:$IMAGE_TAG .
       - docker tag $ECR_REPO:$IMAGE_TAG $ECR_REPO:latest
 
   post_build:
     commands:
-      - echo Pushing Docker image...
+      - echo Pushing image...
       - docker push $ECR_REPO:$IMAGE_TAG
-      - printf '[{"name":"app-course-vafiya","imageUri":"%s"}]' $ECR_REPO:$IMAGE_TAG > imagedefinitions.json
+      - docker push $ECR_REPO:latest
+
+      - echo Updating kubeconfig...
+      - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+
+      - echo Deploying to EKS...
+      - kubectl apply -f course-deployment.yaml
 
 artifacts:
   files:
-    - imagedefinitions.json
+    - '**/*'
