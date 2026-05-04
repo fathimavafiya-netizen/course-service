@@ -49,6 +49,7 @@ metadata:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: student-app
     alb.ingress.kubernetes.io/healthcheck-path: /health
 
 spec:
@@ -56,7 +57,7 @@ spec:
   rules:
     - http:
         paths:
-          - path: /
+          - path: /vafiya-student
             pathType: Prefix
             backend:
               service:
